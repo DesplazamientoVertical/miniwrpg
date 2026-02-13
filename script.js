@@ -118,6 +118,7 @@ function applyGodModeVisual(enabled) {
   document.body.classList.toggle('god-mode', enabled);
 }
 
+
 function updateUI() {
   hero.score = calculateScore();
 
@@ -360,7 +361,7 @@ function startGame() {
   }
 
   if (godMode) {
-    addLog('👑 Modo Dios activado');
+    addLog('👑 Modo Dios activado con DVertical.');
     hero.baseAttack += 999;
   }
 
@@ -416,5 +417,5 @@ const savedColorblindMode = localStorage.getItem('miniwrpgColorblindMode') === '
 ui.colorblindToggle.checked = savedColorblindMode;
 applyColorblindMode(savedColorblindMode);
 
-addLog('🎮 Elige un nombre y un rol para iniciar la aventura.');
+addLog('🎮 Elige un nombre y un rol para iniciar la aventura. Usa DVertical para activar el modo dios.');
 updateUI();
