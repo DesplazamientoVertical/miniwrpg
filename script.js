@@ -1,4 +1,4 @@
-const hero = {
+const baseHero = {
   name: 'Aria',
   hp: 100,
   maxHp: 100,
@@ -6,6 +6,14 @@ const hero = {
   potions: 1,
   baseAttack: 12,
   defending: false,
+  role: 'guerrero',
+  score: 0,
+};
+
+const roleBonus = {
+  guerrero: { hp: 20, attack: 0, gold: 0, potions: 0, label: 'Guerrero' },
+  mago: { hp: 0, attack: 4, gold: 0, potions: 0, label: 'Mago' },
+  picaro: { hp: 0, attack: 0, gold: 20, potions: 1, label: 'Pícaro' },
 };
 
 const enemies = [
@@ -14,10 +22,18 @@ const enemies = [
   { name: 'Gólem Rúnico', hp: 120, maxHp: 120, minAtk: 10, maxAtk: 20, reward: 40 },
 ];
 
+let hero = { ...baseHero };
 let enemyIndex = 0;
 let enemy = { ...enemies[enemyIndex] };
+let defeatedEnemies = 0;
+let gameStarted = false;
 
 const ui = {
+  setupCard: document.getElementById('setupCard'),
+  heroNameInput: document.getElementById('heroNameInput'),
+  heroRoleSelect: document.getElementById('heroRoleSelect'),
+  startBtn: document.getElementById('startBtn'),
+  restartBtn: document.getElementById('restartBtn'),
   heroName: document.getElementById('heroName'),
   heroHpText: document.getElementById('heroHpText'),
   heroHpBar: document.getElementById('heroHpBar'),
@@ -27,6 +43,7 @@ const ui = {
   gold: document.getElementById('gold'),
   potions: document.getElementById('potions'),
   baseAttack: document.getElementById('baseAttack'),
+  score: document.getElementById('score'),
   attackBtn: document.getElementById('attackBtn'),
   defendBtn: document.getElementById('defendBtn'),
   healBtn: document.getElementById('healBtn'),
@@ -49,8 +66,14 @@ function addLog(msg) {
   ui.log.prepend(item);
 }
 
+function calculateScore() {
+  return defeatedEnemies * 100 + hero.gold + hero.baseAttack * 5;
+}
+
 function updateUI() {
-  ui.heroName.textContent = hero.name;
+  hero.score = calculateScore();
+
+  ui.heroName.textContent = `${hero.name} (${roleBonus[hero.role].label})`;
   ui.heroHpText.textContent = `${hero.hp} / ${hero.maxHp}`;
   ui.heroHpBar.max = hero.maxHp;
   ui.heroHpBar.value = hero.hp;
@@ -63,6 +86,7 @@ function updateUI() {
   ui.gold.textContent = hero.gold;
   ui.potions.textContent = hero.potions;
   ui.baseAttack.textContent = hero.baseAttack;
+  ui.score.textContent = hero.score;
 }
 
 function setBattleButtons(enabled) {
@@ -71,28 +95,32 @@ function setBattleButtons(enabled) {
   ui.healBtn.disabled = !enabled;
 }
 
+function loseGame() {
+  setBattleButtons(false);
+  ui.nextEnemyBtn.disabled = true;
+  addLog(`💀 Has sido derrotado. Tu puntaje final fue ${hero.score}.`);
+}
+
 function enemyTurn() {
-  if (enemy.hp <= 0 || hero.hp <= 0) return;
+  if (enemy.hp <= 0 || hero.hp <= 0 || !gameStarted) return;
   let damage = rng(enemy.minAtk, enemy.maxAtk);
   if (hero.defending) {
     damage = Math.max(1, Math.floor(damage / 2));
-    addLog(`🛡️ Te defendiste y redujiste el daño.`);
+    addLog('🛡️ Te defendiste y redujiste el daño.');
   }
 
   hero.hp = Math.max(0, hero.hp - damage);
   hero.defending = false;
   addLog(`👹 ${enemy.name} te golpea y pierdes ${damage} de vida.`);
 
-  if (hero.hp <= 0) {
-    addLog('💀 Has sido derrotado. Recarga para volver a jugar.');
-    setBattleButtons(false);
-    ui.nextEnemyBtn.disabled = true;
-  }
   updateUI();
+  if (hero.hp <= 0) {
+    loseGame();
+  }
 }
 
 function attack() {
-  if (hero.hp <= 0 || enemy.hp <= 0) return;
+  if (hero.hp <= 0 || enemy.hp <= 0 || !gameStarted) return;
   const luckBonus = rng(0, 8);
   const crit = Math.random() < 0.2;
   let damage = hero.baseAttack + luckBonus;
@@ -103,6 +131,7 @@ function attack() {
 
   if (enemy.hp <= 0) {
     hero.gold += enemy.reward;
+    defeatedEnemies += 1;
     addLog(`✅ Venciste a ${enemy.name} y ganaste ${enemy.reward} de oro.`);
     setBattleButtons(false);
     ui.nextEnemyBtn.disabled = enemyIndex >= enemies.length - 1;
@@ -114,6 +143,7 @@ function attack() {
 }
 
 function defend() {
+  if (!gameStarted) return;
   hero.defending = true;
   addLog('🛡️ Te preparas para defender el próximo golpe.');
   enemyTurn();
@@ -121,6 +151,7 @@ function defend() {
 }
 
 function heal() {
+  if (!gameStarted) return;
   if (hero.potions <= 0) {
     addLog('❌ No tienes pociones.');
     return;
@@ -139,6 +170,7 @@ function heal() {
 }
 
 function nextEnemy() {
+  if (!gameStarted) return;
   if (enemyIndex >= enemies.length - 1) {
     addLog('🏆 ¡Ya derrotaste a todos los enemigos de Miniw RPG!');
     ui.nextEnemyBtn.disabled = true;
@@ -158,6 +190,7 @@ function toggleShop() {
 }
 
 function buyPotion() {
+  if (!gameStarted) return;
   if (hero.gold < 15) {
     addLog('❌ No tienes oro suficiente para poción.');
     return;
@@ -169,6 +202,7 @@ function buyPotion() {
 }
 
 function buyAttack() {
+  if (!gameStarted) return;
   if (hero.gold < 25) {
     addLog('❌ No tienes oro suficiente para mejorar ataque.');
     return;
@@ -176,6 +210,53 @@ function buyAttack() {
   hero.gold -= 25;
   hero.baseAttack += 3;
   addLog('🛒 Mejoraste tu ataque base en +3.');
+  updateUI();
+}
+
+function startGame() {
+  const selectedName = ui.heroNameInput.value.trim() || 'Héroe';
+  const selectedRole = ui.heroRoleSelect.value;
+  const bonus = roleBonus[selectedRole] || roleBonus.guerrero;
+
+  hero = {
+    ...baseHero,
+    name: selectedName,
+    role: selectedRole,
+    maxHp: baseHero.maxHp + bonus.hp,
+    hp: baseHero.hp + bonus.hp,
+    baseAttack: baseHero.baseAttack + bonus.attack,
+    gold: baseHero.gold + bonus.gold,
+    potions: baseHero.potions + bonus.potions,
+  };
+
+  enemyIndex = 0;
+  enemy = { ...enemies[enemyIndex] };
+  defeatedEnemies = 0;
+  gameStarted = true;
+  ui.setupCard.classList.add('hidden');
+  ui.shopPanel.classList.add('hidden');
+  setBattleButtons(true);
+  ui.nextEnemyBtn.disabled = true;
+  ui.log.innerHTML = '';
+
+  addLog(`🎮 Comienza la aventura de ${hero.name} (${bonus.label}).`);
+  updateUI();
+}
+
+function restartGame() {
+  gameStarted = false;
+  hero = { ...baseHero };
+  enemyIndex = 0;
+  enemy = { ...enemies[enemyIndex] };
+  defeatedEnemies = 0;
+
+  setBattleButtons(false);
+  ui.nextEnemyBtn.disabled = true;
+  ui.setupCard.classList.remove('hidden');
+  ui.shopPanel.classList.add('hidden');
+  ui.log.innerHTML = '';
+
+  addLog('🔁 Partida reiniciada. Elige nombre y rol para comenzar de nuevo.');
   updateUI();
 }
 
@@ -187,6 +268,8 @@ ui.closeShopBtn.addEventListener('click', toggleShop);
 ui.buyPotionBtn.addEventListener('click', buyPotion);
 ui.buyAttackBtn.addEventListener('click', buyAttack);
 ui.nextEnemyBtn.addEventListener('click', nextEnemy);
+ui.startBtn.addEventListener('click', startGame);
+ui.restartBtn.addEventListener('click', restartGame);
 
-addLog('🎮 Comienza la aventura en Miniw RPG.');
+addLog('🎮 Elige un nombre y un rol para iniciar la aventura.');
 updateUI();
