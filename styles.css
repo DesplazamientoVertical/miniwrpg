@@ -1,0 +1,121 @@
+:root {
+  color-scheme: dark;
+  --bg: #05030f;
+  --card: #120f26;
+  --text: #e8ff89;
+  --muted: #9ac56d;
+  --line: #3f2d76;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: 'Press Start 2P', 'Courier New', monospace;
+  background: repeating-linear-gradient(
+      0deg,
+      #05030f,
+      #05030f 3px,
+      #07051a 3px,
+      #07051a 6px
+    );
+  color: var(--text);
+  min-height: 100vh;
+}
+
+.game {
+  max-width: 920px;
+  margin: 16px auto;
+  padding: 20px;
+  display: grid;
+  gap: 16px;
+}
+
+.crt-frame {
+  border: 3px solid #5f50b4;
+  box-shadow: 0 0 0 4px #1c1342, 0 0 28px rgba(90, 70, 220, 0.35);
+}
+
+header h1 { margin: 0; color: #8ff0ff; text-shadow: 0 0 6px #3ac9f4; }
+.subtitle { color: var(--muted); margin-top: 8px; font-size: 12px; }
+
+.setup-card,
+.status-card,
+.enemy-card,
+.log-card,
+.shop {
+  background: linear-gradient(180deg, #140f2f 0%, #0e0a21 100%);
+  border: 2px solid var(--line);
+  border-radius: 6px;
+  padding: 14px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 12px;
+  margin: 12px 0;
+}
+
+label { display: grid; gap: 6px; font-size: 12px; }
+
+input,
+select {
+  font-family: inherit;
+  color: #e3fbe3;
+  background: #0b0a18;
+  border: 2px solid #3b2b70;
+  padding: 10px;
+}
+
+.role-line {
+  margin: 8px 0;
+  color: #ffd37e;
+  font-size: 12px;
+}
+
+.bars label { display: block; margin-bottom: 6px; font-size: 12px; }
+progress { width: 100%; height: 14px; }
+.stats { margin-top: 12px; display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; }
+
+.actions,
+.shop-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+
+.btn {
+  border: 2px solid #000;
+  color: #fff;
+  font-weight: 700;
+  padding: 10px 13px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.btn:hover { filter: brightness(1.15); }
+.btn:disabled { cursor: not-allowed; opacity: 0.5; }
+
+.red { background: #d33232; }
+.blue { background: #3366d3; }
+.green { background: #2f9e44; }
+.purple { background: #7a3fd1; }
+.orange { background: #d9742d; }
+.gray { background: #667085; }
+.cyan { background: #008ea7; }
+
+.log-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.log-card li {
+  padding: 6px 0;
+  border-bottom: 1px dashed #3a2b70;
+  color: #d8f58e;
+  font-size: 12px;
+}
+
+.hidden { display: none; }
