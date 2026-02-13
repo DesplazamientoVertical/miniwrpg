@@ -25,9 +25,29 @@ const enemies = [
   { name: 'Gólem Rúnico', hp: 120, maxHp: 120, minAtk: 10, maxAtk: 20, reward: 40, location: 'Ruinas de Ceniza' },
 ];
 
+function createEnemyForRound(round) {
+  const template = enemies[round % enemies.length];
+  const tier = Math.floor(round / enemies.length);
+  const hpBoost = 1 + tier * 0.28;
+  const atkBoost = 1 + tier * 0.2;
+  const rewardBoost = 1 + tier * 0.18;
+
+  const maxHp = Math.floor(template.maxHp * hpBoost);
+
+  return {
+    ...template,
+    name: `${template.name} ${tier > 0 ? `+${tier}` : ''}`.trim(),
+    hp: maxHp,
+    maxHp,
+    minAtk: Math.max(1, Math.floor(template.minAtk * atkBoost)),
+    maxAtk: Math.max(1, Math.floor(template.maxAtk * atkBoost)),
+    reward: Math.floor(template.reward * rewardBoost),
+  };
+}
+
 let hero = { ...baseHero };
 let enemyIndex = 0;
-let enemy = { ...enemies[enemyIndex] };
+let enemy = createEnemyForRound(enemyIndex);
 let defeatedEnemies = 0;
 let gameStarted = false;
 let isBanned = false;
@@ -142,7 +162,7 @@ function updateUI() {
   if (gameStarted && hero.hp > 0) {
     if (enemy.hp <= 0) {
       setBattleButtons(false);
-      ui.nextEnemyBtn.disabled = enemyIndex >= enemies.length - 1;
+      ui.nextEnemyBtn.disabled = false;
     } else {
       setBattleButtons(true);
       ui.nextEnemyBtn.disabled = true;
@@ -205,12 +225,8 @@ function attack() {
     hero.gold += enemy.reward;
     defeatedEnemies += 1;
     addLog(`✅ Venciste a ${enemy.name} y ganaste ${enemy.reward} de oro.`);
-    const hasMoreEnemies = enemyIndex < enemies.length - 1;
     setBattleButtons(false);
-    ui.nextEnemyBtn.disabled = !hasMoreEnemies;
-    if (!hasMoreEnemies) {
-      addLog('🏆 ¡Victoria total! Derrotaste a todos los enemigos.');
-    }
+    ui.nextEnemyBtn.disabled = false;
   } else {
     enemyTurn();
   }
@@ -247,17 +263,11 @@ function heal() {
 
 function nextEnemy() {
   if (!gameStarted) return;
-  if (enemyIndex >= enemies.length - 1) {
-    addLog('🏆 Ya no quedan enemigos. Reinicia para jugar otra partida');
-    ui.nextEnemyBtn.disabled = true;
-    return;
-  }
-
   enemyIndex += 1;
-  enemy = { ...enemies[enemyIndex] };
+  enemy = createEnemyForRound(enemyIndex);
   setBattleButtons(true);
   ui.nextEnemyBtn.disabled = true;
-  addLog(`➡️ Aparece un nuevo enemigo: ${enemy.name}.`);
+  addLog(`➡️ Ronda ${enemyIndex + 1}: aparece ${enemy.name}.`);
   updateUI();
 }
 
@@ -347,7 +357,7 @@ function startGame() {
   };
 
   enemyIndex = 0;
-  enemy = { ...enemies[enemyIndex] };
+  enemy = createEnemyForRound(enemyIndex);
   defeatedEnemies = 0;
   gameStarted = true;
   ui.setupCard.classList.add('hidden');
@@ -362,7 +372,7 @@ function startGame() {
   applyGodModeVisual(godMode);
 
   if (normalizedName === secretNames.trueLove) {
-    addLog('💖 te amo mucho, ganaste');
+    addLog('💖 te amo mucho. No hay final, la aventura sigue infinitamente.');
   }
 
   if (godMode) {
@@ -389,7 +399,7 @@ function restartGame() {
   applyGodModeVisual(false);
   hero = { ...baseHero };
   enemyIndex = 0;
-  enemy = { ...enemies[enemyIndex] };
+  enemy = createEnemyForRound(enemyIndex);
   defeatedEnemies = 0;
 
   setBattleButtons(false);
