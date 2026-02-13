@@ -35,6 +35,45 @@ body {
   gap: 16px;
 }
 
+
+header {
+  position: relative;
+}
+
+.accessibility-toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.accessibility-toggle input {
+  width: 16px;
+  height: 16px;
+}
+
+body.colorblind-mode {
+  --bg: #0d1117;
+  --card: #0f1a24;
+  --text: #f8fafc;
+  --muted: #cbd5e1;
+  --border: #38bdf8;
+}
+
+body.colorblind-mode progress {
+  accent-color: #22c55e;
+}
+
+body.colorblind-mode .red { background: #b45309; }
+body.colorblind-mode .blue { background: #0369a1; }
+body.colorblind-mode .green { background: #16a34a; }
+body.colorblind-mode .purple { background: #7c3aed; }
+body.colorblind-mode .orange { background: #ea580c; }
+body.colorblind-mode .gray { background: #475569; }
 header h1 {
   margin: 0;
   text-shadow: 2px 2px #000;
