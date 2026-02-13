@@ -11,27 +11,37 @@ const baseHero = {
 };
 
 const roleBonus = {
-  guerrero: { hp: 20, attack: 0, gold: 0, potions: 0, label: 'Guerrero' },
-  mago: { hp: 0, attack: 4, gold: 0, potions: 0, label: 'Mago' },
-  picaro: { hp: 0, attack: 0, gold: 20, potions: 1, label: 'Pícaro' },
+  guerrero: { hp: 20, attack: 0, gold: 0, potions: 0, defense: 0, label: 'Guerrero' },
+  mago: { hp: 0, attack: 4, gold: 0, potions: 0, defense: 0, label: 'Mago' },
+  picaro: { hp: 0, attack: 0, gold: 20, potions: 1, defense: 0, label: 'Pícaro' },
+  paladin: { hp: 25, attack: 1, gold: 0, potions: 0, defense: 2, label: 'Paladín' },
+  cazador: { hp: 0, attack: 5, gold: 10, potions: 0, defense: 0, label: 'Cazador' },
+  alquimista: { hp: 5, attack: 1, gold: 0, potions: 3, defense: 0, label: 'Alquimista' },
 };
 
 const enemies = [
-  { name: 'Lobo Sombrío', hp: 70, maxHp: 70, minAtk: 6, maxAtk: 12, reward: 20 },
-  { name: 'Bandido Rojo', hp: 90, maxHp: 90, minAtk: 8, maxAtk: 15, reward: 28 },
-  { name: 'Gólem Rúnico', hp: 120, maxHp: 120, minAtk: 10, maxAtk: 20, reward: 40 },
+  { name: 'Lobo Sombrío', hp: 70, maxHp: 70, minAtk: 6, maxAtk: 12, reward: 20, location: 'Bosque Marchito' },
+  { name: 'Bandido Rojo', hp: 90, maxHp: 90, minAtk: 8, maxAtk: 15, reward: 28, location: 'Camino del Acantilado' },
+  { name: 'Gólem Rúnico', hp: 120, maxHp: 120, minAtk: 10, maxAtk: 20, reward: 40, location: 'Ruinas de Ceniza' },
 ];
+
+const endlessLocations = ['Santuario del Alba', 'Valle Quebrado', 'Nexo Espectral', 'Torre del Vacío'];
 
 let hero = { ...baseHero };
 let enemyIndex = 0;
 let enemy = { ...enemies[enemyIndex] };
 let defeatedEnemies = 0;
+let endlessWave = 0;
 let gameStarted = false;
 let isBanned = false;
+let godMode = false;
+
 const secretNames = {
   instantDeath: 'fjnavarro',
   aestheticArmor: '21n',
   banned: 'donas',
+  trueLove: 'ichita',
+  godMode: 'dvertical',
 };
 
 const ui = {
@@ -61,9 +71,9 @@ const ui = {
   closeShopBtn: document.getElementById('closeShopBtn'),
   buyAestheticArmorBtn: document.getElementById('buyAestheticArmorBtn'),
   colorblindToggle: document.getElementById('colorblindToggle'),
+  locationName: document.getElementById('locationName'),
   log: document.getElementById('log'),
 };
-
 
 function normalizeName(name) {
   return name.trim().toLowerCase();
@@ -74,25 +84,15 @@ function applyColorblindMode(enabled) {
   localStorage.setItem('miniwrpgColorblindMode', enabled ? '1' : '0');
 }
 
-function forceDefeatBySecret() {
-  enemy = {
-    name: 'El barbudo hijo de ####',
-    hp: 1,
-    maxHp: 1,
-    minAtk: hero.maxHp,
-    maxAtk: hero.maxHp,
-    reward: 0,
-  };
-  addLog('☠️ Te cruzaste con El barbudo hijo de ####.');
-  hero.hp = 0;
-  updateUI();
-  loseGame();
+function applyGodModeVisual(enabled) {
+  document.body.classList.toggle('god-mode', enabled);
 }
 
 function updateSecretShopOptions() {
   const canBuyAestheticArmor = normalizeName(hero.name) === secretNames.aestheticArmor;
   ui.buyAestheticArmorBtn.classList.toggle('hidden', !canBuyAestheticArmor);
 }
+
 function rng(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
@@ -119,6 +119,7 @@ function updateUI() {
   ui.enemyHpText.textContent = `${enemy.hp} / ${enemy.maxHp}`;
   ui.enemyHpBar.max = enemy.maxHp;
   ui.enemyHpBar.value = enemy.hp;
+  ui.locationName.textContent = enemy.location || 'Sin lugar';
 
   ui.gold.textContent = hero.gold;
   ui.potions.textContent = hero.potions;
@@ -138,17 +139,61 @@ function loseGame() {
   addLog(`💀 Has sido derrotado. Tu puntaje final fue ${hero.score}.`);
 }
 
+function forceDefeatBySecret() {
+  enemy = {
+    name: 'El barbudo hijo de ####',
+    hp: 1,
+    maxHp: 1,
+    minAtk: hero.maxHp,
+    maxAtk: hero.maxHp,
+    reward: 0,
+    location: 'Abismo del Baneo',
+  };
+  addLog('☠️ Te cruzaste con El barbudo hijo de ####.');
+  hero.hp = 0;
+  updateUI();
+  loseGame();
+}
+
+function createEndlessEnemy() {
+  endlessWave += 1;
+  const scaling = 20 + endlessWave * 12;
+  const hp = 130 + endlessWave * 22;
+  return {
+    name: `Bestia del Vacío ${endlessWave}`,
+    hp,
+    maxHp: hp,
+    minAtk: 11 + Math.floor(endlessWave * 1.5),
+    maxAtk: 18 + Math.floor(endlessWave * 2),
+    reward: scaling,
+    location: endlessLocations[endlessWave % endlessLocations.length],
+  };
+}
+
 function enemyTurn() {
   if (enemy.hp <= 0 || hero.hp <= 0 || !gameStarted) return;
   let damage = rng(enemy.minAtk, enemy.maxAtk);
+
   if (hero.defending) {
     damage = Math.max(1, Math.floor(damage / 2));
     addLog('🛡️ Te defendiste y redujiste el daño.');
   }
 
+  if (godMode) {
+    damage = 0;
+  }
+
+  const mitigation = hero.damageReduction || 0;
+  damage = Math.max(0, damage - mitigation);
+
   hero.hp = Math.max(0, hero.hp - damage);
   hero.defending = false;
-  addLog(`👹 ${enemy.name} te golpea y pierdes ${damage} de vida.`);
+
+  if (godMode) {
+    addLog('✨ Modo Dios bloqueó todo el daño recibido.');
+  } else {
+    addLog(`👹 ${enemy.name} te golpea y pierdes ${damage} de vida.`);
+  }
 
   updateUI();
   if (hero.hp <= 0) {
@@ -158,9 +203,11 @@ function enemyTurn() {
 
 function attack() {
   if (hero.hp <= 0 || enemy.hp <= 0 || !gameStarted) return;
+
   const luckBonus = rng(0, 8);
   const crit = Math.random() < 0.2;
   let damage = hero.baseAttack + luckBonus;
+
   if (crit) damage += 10;
 
   enemy.hp = Math.max(0, enemy.hp - damage);
@@ -171,7 +218,11 @@ function attack() {
     defeatedEnemies += 1;
     addLog(`✅ Venciste a ${enemy.name} y ganaste ${enemy.reward} de oro.`);
     setBattleButtons(false);
-    ui.nextEnemyBtn.disabled = enemyIndex >= enemies.length - 1;
+    ui.nextEnemyBtn.disabled = false;
+
+    if (enemyIndex >= enemies.length - 1 && endlessWave === 0) {
+      addLog('🏆 Superaste la campaña base. Pulsa “Siguiente enemigo” para continuar en modo infinito.');
+    }
   } else {
     enemyTurn();
   }
@@ -208,14 +259,20 @@ function heal() {
 
 function nextEnemy() {
   if (!gameStarted) return;
-  if (enemyIndex >= enemies.length - 1) {
-    addLog('🏆 ¡Ya derrotaste a todos los enemigos de Miniw RPG!');
-    ui.nextEnemyBtn.disabled = true;
+
+  if (enemy.hp > 0) {
+    addLog('❌ Primero debes derrotar al enemigo actual.');
     return;
   }
 
-  enemyIndex += 1;
-  enemy = { ...enemies[enemyIndex] };
+  if (enemyIndex < enemies.length - 1) {
+    enemyIndex += 1;
+    enemy = { ...enemies[enemyIndex] };
+  } else {
+    enemy = createEndlessEnemy();
+    addLog(`🌍 Nuevo frente abierto en ${enemy.location}.`);
+  }
+
   setBattleButtons(true);
   ui.nextEnemyBtn.disabled = true;
   addLog(`➡️ Aparece un nuevo enemigo: ${enemy.name}.`);
@@ -250,7 +307,6 @@ function buyAttack() {
   addLog('🛒 Mejoraste tu ataque base en +3.');
   updateUI();
 }
-
 
 function buyAestheticArmor() {
   if (!gameStarted) return;
@@ -301,11 +357,13 @@ function startGame() {
     baseAttack: baseHero.baseAttack + bonus.attack,
     gold: baseHero.gold + bonus.gold,
     potions: baseHero.potions + bonus.potions,
+    damageReduction: bonus.defense || 0,
   };
 
   enemyIndex = 0;
   enemy = { ...enemies[enemyIndex] };
   defeatedEnemies = 0;
+  endlessWave = 0;
   gameStarted = true;
   ui.setupCard.classList.add('hidden');
   ui.shopPanel.classList.add('hidden');
@@ -314,10 +372,23 @@ function startGame() {
   ui.log.innerHTML = '';
 
   addLog(`🎮 Comienza la aventura de ${hero.name} (${bonus.label}).`);
+
+  godMode = normalizedName === secretNames.godMode;
+  applyGodModeVisual(godMode);
+
+  if (normalizedName === secretNames.trueLove) {
+    addLog('💖 te amo mucho, ganaste');
+  }
+
+  if (godMode) {
+    addLog('👑 Modo Dios activado');
+    hero.baseAttack += 999;
+  }
+
   updateSecretShopOptions();
   updateUI();
 
-  if (normalizeName(hero.name) === secretNames.instantDeath) {
+  if (normalizedName === secretNames.instantDeath) {
     forceDefeatBySecret();
   }
 }
@@ -329,6 +400,9 @@ function restartGame() {
   }
 
   gameStarted = false;
+  godMode = false;
+  endlessWave = 0;
+  applyGodModeVisual(false);
   hero = { ...baseHero };
   enemyIndex = 0;
   enemy = { ...enemies[enemyIndex] };
