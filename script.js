@@ -32,11 +32,7 @@ let defeatedEnemies = 0;
 let gameStarted = false;
 let isBanned = false;
 let godMode = false;
-let musicEnabled = true;
-
-const backgroundMusic = new Audio('https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8b3798d8f.mp3?filename=adventure-theme-119304.mp3');
-backgroundMusic.loop = true;
-backgroundMusic.volume = 0.3;
+let enemyCycle = 0;
 const secretNames = {
   instantDeath: 'fjnavarro',
   aestheticArmor: '21n',
@@ -65,7 +61,6 @@ const ui = {
   defendBtn: document.getElementById('defendBtn'),
   healBtn: document.getElementById('healBtn'),
   shopBtn: document.getElementById('shopBtn'),
-  musicToggleBtn: document.getElementById('musicToggleBtn'),
   nextEnemyBtn: document.getElementById('nextEnemyBtn'),
   shopPanel: document.getElementById('shopPanel'),
   buyPotionBtn: document.getElementById('buyPotionBtn'),
@@ -117,7 +112,22 @@ function addLog(msg) {
 }
 
 function calculateScore() {
-  return defeatedEnemies * 100 + hero.gold + hero.baseAttack * 5;
+  return defeatedEnemies * 100 + hero.gold + hero.baseAttack * 5 + enemyCycle * 50;
+}
+
+function spawnEnemy(index, cycle) {
+  const template = enemies[index];
+  const hpBoost = cycle * 18;
+  const atkBoost = cycle * 2;
+
+  return {
+    ...template,
+    hp: template.hp + hpBoost,
+    maxHp: template.maxHp + hpBoost,
+    minAtk: template.minAtk + atkBoost,
+    maxAtk: template.maxAtk + atkBoost,
+    reward: template.reward + cycle * 6,
+  };
 }
 
 function applyGodModeVisual(enabled) {
@@ -125,34 +135,6 @@ function applyGodModeVisual(enabled) {
 }
 
 
-function updateMusicButtonLabel() {
-  ui.musicToggleBtn.textContent = musicEnabled ? 'Desactivar música' : 'Activar música';
-}
-
-function playBackgroundMusic() {
-  if (!musicEnabled) return;
-  backgroundMusic.currentTime = 0;
-  backgroundMusic.play().catch(() => {
-    addLog('⚠️ No se pudo reproducir la música automáticamente.');
-  });
-}
-
-function stopBackgroundMusic() {
-  backgroundMusic.pause();
-  backgroundMusic.currentTime = 0;
-}
-
-function toggleMusic() {
-  musicEnabled = !musicEnabled;
-  if (musicEnabled && gameStarted) {
-    playBackgroundMusic();
-    addLog('🎵 Música activada.');
-  } else {
-    stopBackgroundMusic();
-    addLog('🔇 Música desactivada.');
-  }
-  updateMusicButtonLabel();
-}
 
 function updateUI() {
   hero.score = calculateScore();
@@ -176,7 +158,7 @@ function updateUI() {
   if (gameStarted && hero.hp > 0) {
     if (enemy.hp <= 0) {
       setBattleButtons(false);
-      ui.nextEnemyBtn.disabled = enemyIndex >= enemies.length - 1;
+      ui.nextEnemyBtn.disabled = false;
     } else {
       setBattleButtons(true);
       ui.nextEnemyBtn.disabled = true;
@@ -240,7 +222,7 @@ function attack() {
     defeatedEnemies += 1;
     addLog(`✅ Venciste a ${enemy.name} y ganaste ${enemy.reward} de oro.`);
     setBattleButtons(false);
-    ui.nextEnemyBtn.disabled = enemyIndex >= enemies.length - 1;
+    ui.nextEnemyBtn.disabled = false;
   } else {
     enemyTurn();
   }
@@ -277,14 +259,14 @@ function heal() {
 
 function nextEnemy() {
   if (!gameStarted) return;
-  if (enemyIndex >= enemies.length - 1) {
-    addLog('🏆 ¡Ya derrotaste a todos los enemigos de Miniw RPG!');
-    ui.nextEnemyBtn.disabled = true;
-    return;
+  enemyIndex += 1;
+  if (enemyIndex >= enemies.length) {
+    enemyIndex = 0;
+    enemyCycle += 1;
+    addLog(`♾️ Empieza la ronda infinita ${enemyCycle + 1}. Los enemigos son más fuertes.`);
   }
 
-  enemyIndex += 1;
-  enemy = { ...enemies[enemyIndex] };
+  enemy = spawnEnemy(enemyIndex, enemyCycle);
   setBattleButtons(true);
   ui.nextEnemyBtn.disabled = true;
   addLog(`➡️ Aparece un nuevo enemigo: ${enemy.name}.`);
@@ -348,13 +330,11 @@ function startGame() {
   if (normalizedName === secretNames.banned) {
     isBanned = true;
     gameStarted = false;
-    stopBackgroundMusic();
     setBattleButtons(false);
     ui.nextEnemyBtn.disabled = true;
     ui.setupCard.classList.remove('hidden');
     ui.shopPanel.classList.add('hidden');
     ui.log.innerHTML = '';
-    ui.musicToggleBtn.disabled = true;
     addLog('⛔ BANEADO. Tenés que reiniciar la página sí o sí.');
     updateUI();
     return;
@@ -379,7 +359,8 @@ function startGame() {
   };
 
   enemyIndex = 0;
-  enemy = { ...enemies[enemyIndex] };
+  enemyCycle = 0;
+  enemy = spawnEnemy(enemyIndex, enemyCycle);
   defeatedEnemies = 0;
   gameStarted = true;
   ui.setupCard.classList.add('hidden');
@@ -387,10 +368,8 @@ function startGame() {
   setBattleButtons(true);
   ui.nextEnemyBtn.disabled = true;
   ui.log.innerHTML = '';
-  ui.musicToggleBtn.disabled = false;
 
   addLog(`🎮 Comienza la aventura de ${hero.name} (${bonus.label}).`);
-  playBackgroundMusic();
 
   godMode = normalizedName === secretNames.godMode;
   applyGodModeVisual(godMode);
@@ -419,12 +398,12 @@ function restartGame() {
   }
 
   gameStarted = false;
-  stopBackgroundMusic();
   godMode = false;
   applyGodModeVisual(false);
   hero = { ...baseHero };
   enemyIndex = 0;
-  enemy = { ...enemies[enemyIndex] };
+  enemyCycle = 0;
+  enemy = spawnEnemy(enemyIndex, enemyCycle);
   defeatedEnemies = 0;
 
   setBattleButtons(false);
@@ -432,7 +411,6 @@ function restartGame() {
   ui.setupCard.classList.remove('hidden');
   ui.shopPanel.classList.add('hidden');
   ui.log.innerHTML = '';
-  ui.musicToggleBtn.disabled = true;
   updateSecretShopOptions();
 
   addLog('🔁 Partida reiniciada. Elige nombre y rol para comenzar de nuevo.');
@@ -443,7 +421,6 @@ ui.attackBtn.addEventListener('click', attack);
 ui.defendBtn.addEventListener('click', defend);
 ui.healBtn.addEventListener('click', heal);
 ui.shopBtn.addEventListener('click', toggleShop);
-ui.musicToggleBtn.addEventListener('click', toggleMusic);
 ui.closeShopBtn.addEventListener('click', toggleShop);
 ui.buyPotionBtn.addEventListener('click', buyPotion);
 ui.buyAttackBtn.addEventListener('click', buyAttack);
@@ -458,9 +435,6 @@ ui.colorblindToggle.addEventListener('change', (event) => {
 const savedColorblindMode = localStorage.getItem('miniwrpgColorblindMode') === '1';
 ui.colorblindToggle.checked = savedColorblindMode;
 applyColorblindMode(savedColorblindMode);
-
-ui.musicToggleBtn.disabled = true;
-updateMusicButtonLabel();
 
 addLog('🎮 Elige un nombre y un rol para iniciar la aventura. Usa DVertical para activar el modo dios.');
 updateUI();
