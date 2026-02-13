@@ -1,0 +1,118 @@
+:root {
+  color-scheme: dark;
+  --bg: #111827;
+  --card: #1f2937;
+  --text: #e5e7eb;
+  --muted: #9ca3af;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: radial-gradient(circle at top, #1d4ed8 0%, var(--bg) 55%);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+.game {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 24px;
+  display: grid;
+  gap: 16px;
+}
+
+header h1 {
+  margin: 0;
+}
+
+.subtitle {
+  color: var(--muted);
+  margin-top: 6px;
+}
+
+.status-card,
+.enemy-card,
+.log-card,
+.shop {
+  background: color-mix(in hsl, var(--card), black 8%);
+  border: 1px solid #374151;
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.bars label {
+  display: block;
+  margin-bottom: 6px;
+}
+
+progress {
+  width: 100%;
+  height: 14px;
+}
+
+.stats {
+  margin-top: 12px;
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.actions,
+.shop-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.btn {
+  border: none;
+  border-radius: 10px;
+  color: #fff;
+  font-weight: 700;
+  padding: 11px 14px;
+  cursor: pointer;
+  transition: transform 0.1s ease, filter 0.15s ease;
+}
+
+.btn:hover {
+  filter: brightness(1.1);
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.red { background: #dc2626; }
+.blue { background: #2563eb; }
+.green { background: #16a34a; }
+.purple { background: #7c3aed; }
+.orange { background: #ea580c; }
+.gray { background: #6b7280; }
+
+.log-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.log-card li {
+  padding: 6px 0;
+  border-bottom: 1px dashed #374151;
+  color: #d1d5db;
+}
+
+.hidden {
+  display: none;
+}
