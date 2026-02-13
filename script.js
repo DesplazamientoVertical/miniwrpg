@@ -11,15 +11,18 @@ const baseHero = {
 };
 
 const roleBonus = {
-  guerrero: { hp: 20, attack: 0, gold: 0, potions: 0, label: 'Guerrero' },
-  mago: { hp: 0, attack: 4, gold: 0, potions: 0, label: 'Mago' },
-  picaro: { hp: 0, attack: 0, gold: 20, potions: 1, label: 'Pícaro' },
+  guerrero: { hp: 20, attack: 0, gold: 0, potions: 0, defense: 0, label: 'Guerrero' },
+  mago: { hp: 0, attack: 4, gold: 0, potions: 0, defense: 0, label: 'Mago' },
+  picaro: { hp: 0, attack: 0, gold: 20, potions: 1, defense: 0, label: 'Pícaro' },
+  paladin: { hp: 25, attack: 1, gold: 0, potions: 0, defense: 2, label: 'Paladín' },
+  cazador: { hp: 0, attack: 5, gold: 10, potions: 0, defense: 0, label: 'Cazador' },
+  alquimista: { hp: 5, attack: 1, gold: 0, potions: 3, defense: 0, label: 'Alquimista' },
 };
 
 const enemies = [
-  { name: 'Lobo Sombrío', hp: 70, maxHp: 70, minAtk: 6, maxAtk: 12, reward: 20 },
-  { name: 'Bandido Rojo', hp: 90, maxHp: 90, minAtk: 8, maxAtk: 15, reward: 28 },
-  { name: 'Gólem Rúnico', hp: 120, maxHp: 120, minAtk: 10, maxAtk: 20, reward: 40 },
+  { name: 'Lobo Sombrío', hp: 70, maxHp: 70, minAtk: 6, maxAtk: 12, reward: 20, location: 'Bosque Marchito' },
+  { name: 'Bandido Rojo', hp: 90, maxHp: 90, minAtk: 8, maxAtk: 15, reward: 28, location: 'Camino del Acantilado' },
+  { name: 'Gólem Rúnico', hp: 120, maxHp: 120, minAtk: 10, maxAtk: 20, reward: 40, location: 'Ruinas de Ceniza' },
 ];
 
 let hero = { ...baseHero };
@@ -28,10 +31,13 @@ let enemy = { ...enemies[enemyIndex] };
 let defeatedEnemies = 0;
 let gameStarted = false;
 let isBanned = false;
+let godMode = false;
 const secretNames = {
   instantDeath: 'fjnavarro',
   aestheticArmor: '21n',
   banned: 'donas',
+  trueLove: 'ichita',
+  godMode: 'desplazamiento vertical',
 };
 
 const ui = {
@@ -61,6 +67,7 @@ const ui = {
   closeShopBtn: document.getElementById('closeShopBtn'),
   buyAestheticArmorBtn: document.getElementById('buyAestheticArmorBtn'),
   colorblindToggle: document.getElementById('colorblindToggle'),
+  locationName: document.getElementById('locationName'),
   log: document.getElementById('log'),
 };
 
@@ -107,6 +114,10 @@ function calculateScore() {
   return defeatedEnemies * 100 + hero.gold + hero.baseAttack * 5;
 }
 
+function applyGodModeVisual(enabled) {
+  document.body.classList.toggle('god-mode', enabled);
+}
+
 function updateUI() {
   hero.score = calculateScore();
 
@@ -119,6 +130,7 @@ function updateUI() {
   ui.enemyHpText.textContent = `${enemy.hp} / ${enemy.maxHp}`;
   ui.enemyHpBar.max = enemy.maxHp;
   ui.enemyHpBar.value = enemy.hp;
+  ui.locationName.textContent = enemy.location || 'Sin lugar';
 
   ui.gold.textContent = hero.gold;
   ui.potions.textContent = hero.potions;
@@ -146,9 +158,20 @@ function enemyTurn() {
     addLog('🛡️ Te defendiste y redujiste el daño.');
   }
 
+  if (godMode) {
+    damage = 0;
+  }
+
+  const mitigation = hero.damageReduction || 0;
+  damage = Math.max(0, damage - mitigation);
+
   hero.hp = Math.max(0, hero.hp - damage);
   hero.defending = false;
-  addLog(`👹 ${enemy.name} te golpea y pierdes ${damage} de vida.`);
+  if (godMode) {
+    addLog('✨ Modo Dios bloqueó todo el daño recibido.');
+  } else {
+    addLog(`👹 ${enemy.name} te golpea y pierdes ${damage} de vida.`);
+  }
 
   updateUI();
   if (hero.hp <= 0) {
@@ -301,6 +324,7 @@ function startGame() {
     baseAttack: baseHero.baseAttack + bonus.attack,
     gold: baseHero.gold + bonus.gold,
     potions: baseHero.potions + bonus.potions,
+    damageReduction: bonus.defense || 0,
   };
 
   enemyIndex = 0;
@@ -314,6 +338,19 @@ function startGame() {
   ui.log.innerHTML = '';
 
   addLog(`🎮 Comienza la aventura de ${hero.name} (${bonus.label}).`);
+
+  godMode = normalizedName === secretNames.godMode;
+  applyGodModeVisual(godMode);
+
+  if (normalizedName === secretNames.trueLove) {
+    addLog('💖 te amo mucho, ganaste');
+  }
+
+  if (godMode) {
+    addLog('👑 Modo Dios activado');
+    hero.baseAttack += 999;
+  }
+
   updateSecretShopOptions();
   updateUI();
 
@@ -329,6 +366,8 @@ function restartGame() {
   }
 
   gameStarted = false;
+  godMode = false;
+  applyGodModeVisual(false);
   hero = { ...baseHero };
   enemyIndex = 0;
   enemy = { ...enemies[enemyIndex] };

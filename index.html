@@ -28,6 +28,9 @@
             <option value="guerrero">Guerrero (+vida)</option>
             <option value="mago">Mago (+ataque)</option>
             <option value="picaro">Pícaro (+oro y poción)</option>
+            <option value="paladin">Paladín (+vida y defensa)</option>
+            <option value="cazador">Cazador (+ataque y oro)</option>
+            <option value="alquimista">Alquimista (+pociones)</option>
           </select>
         </div>
         <button id="startBtn" class="btn orange">Comenzar partida</button>
@@ -49,6 +52,7 @@
 
       <section class="enemy-card">
         <h2 id="enemyName">Lobo Sombrío</h2>
+        <p class="location">📍 Lugar: <strong id="locationName">Bosque Marchito</strong></p>
         <div class="bars">
           <label>Vida enemigo: <span id="enemyHpText">70 / 70</span></label>
           <progress id="enemyHpBar" value="70" max="70"></progress>

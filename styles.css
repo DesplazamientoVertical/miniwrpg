@@ -185,6 +185,36 @@ progress {
   color: #ffedcc;
 }
 
+
+.location {
+  margin: 6px 0 10px;
+  color: var(--muted);
+}
+
+body.god-mode {
+  background: #fff;
+  color: #111;
+}
+
+body.god-mode .setup-card,
+body.god-mode .status-card,
+body.god-mode .enemy-card,
+body.god-mode .log-card,
+body.god-mode .shop {
+  background: #fff;
+  border-color: #fff;
+  color: #111;
+  box-shadow: none;
+}
+
+body.god-mode .subtitle,
+body.god-mode .accessibility-toggle,
+body.god-mode .location,
+body.god-mode .log-card li {
+  color: #111;
+  border-bottom-color: #ddd;
+}
+
 .hidden {
   display: none;
 }
