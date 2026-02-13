@@ -9,6 +9,10 @@
   <body>
     <main class="game">
       <header>
+        <div class="accessibility-toggle">
+          <label for="colorblindToggle">Modo daltónico</label>
+          <input id="colorblindToggle" type="checkbox" />
+        </div>
         <h1>⚔️ Miniw RPG</h1>
         <p class="subtitle">RPG visual estilo texto con combate por turnos y suerte.</p>
       </header>
@@ -66,6 +70,7 @@
         <div class="shop-actions">
           <button id="buyPotionBtn" class="btn green">Comprar poción (15 oro)</button>
           <button id="buyAttackBtn" class="btn red">Mejorar ataque +3 (25 oro)</button>
+          <button id="buyAestheticArmorBtn" class="btn blue hidden">Armadura estética (60 oro)</button>
           <button id="closeShopBtn" class="btn gray">Cerrar tienda</button>
         </div>
       </section>

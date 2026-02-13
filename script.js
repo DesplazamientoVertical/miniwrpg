@@ -27,6 +27,12 @@ let enemyIndex = 0;
 let enemy = { ...enemies[enemyIndex] };
 let defeatedEnemies = 0;
 let gameStarted = false;
+let isBanned = false;
+const secretNames = {
+  instantDeath: 'fjnavarro',
+  aestheticArmor: '21n',
+  banned: 'donas',
+};
 
 const ui = {
   setupCard: document.getElementById('setupCard'),
@@ -53,9 +59,40 @@ const ui = {
   buyPotionBtn: document.getElementById('buyPotionBtn'),
   buyAttackBtn: document.getElementById('buyAttackBtn'),
   closeShopBtn: document.getElementById('closeShopBtn'),
+  buyAestheticArmorBtn: document.getElementById('buyAestheticArmorBtn'),
+  colorblindToggle: document.getElementById('colorblindToggle'),
   log: document.getElementById('log'),
 };
 
+
+function normalizeName(name) {
+  return name.trim().toLowerCase();
+}
+
+function applyColorblindMode(enabled) {
+  document.body.classList.toggle('colorblind-mode', enabled);
+  localStorage.setItem('miniwrpgColorblindMode', enabled ? '1' : '0');
+}
+
+function forceDefeatBySecret() {
+  enemy = {
+    name: 'El barbudo hijo de ####',
+    hp: 1,
+    maxHp: 1,
+    minAtk: hero.maxHp,
+    maxAtk: hero.maxHp,
+    reward: 0,
+  };
+  addLog('☠️ Te cruzaste con El barbudo hijo de ####.');
+  hero.hp = 0;
+  updateUI();
+  loseGame();
+}
+
+function updateSecretShopOptions() {
+  const canBuyAestheticArmor = normalizeName(hero.name) === secretNames.aestheticArmor;
+  ui.buyAestheticArmorBtn.classList.toggle('hidden', !canBuyAestheticArmor);
+}
 function rng(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
@@ -186,6 +223,7 @@ function nextEnemy() {
 }
 
 function toggleShop() {
+  if (!gameStarted || isBanned) return;
   ui.shopPanel.classList.toggle('hidden');
 }
 
@@ -213,8 +251,44 @@ function buyAttack() {
   updateUI();
 }
 
+
+function buyAestheticArmor() {
+  if (!gameStarted) return;
+  if (normalizeName(hero.name) !== secretNames.aestheticArmor) {
+    addLog('❌ Ese objeto no está disponible para tu héroe.');
+    return;
+  }
+  if (hero.gold < 60) {
+    addLog('❌ No tienes oro suficiente para Armadura estética.');
+    return;
+  }
+  hero.gold -= 60;
+  addLog('🛒 Compraste Armadura estética. Se ve increíble, pero no hace nada.');
+  updateUI();
+}
+
 function startGame() {
+  if (isBanned) {
+    addLog('⛔ Estás baneado. Reinicia la página para volver a jugar.');
+    return;
+  }
+
   const selectedName = ui.heroNameInput.value.trim() || 'Héroe';
+  const normalizedName = normalizeName(selectedName);
+
+  if (normalizedName === secretNames.banned) {
+    isBanned = true;
+    gameStarted = false;
+    setBattleButtons(false);
+    ui.nextEnemyBtn.disabled = true;
+    ui.setupCard.classList.remove('hidden');
+    ui.shopPanel.classList.add('hidden');
+    ui.log.innerHTML = '';
+    addLog('⛔ BANEADO. Tenés que reiniciar la página sí o sí.');
+    updateUI();
+    return;
+  }
+
   const selectedRole = ui.heroRoleSelect.value;
   const bonus = roleBonus[selectedRole] || roleBonus.guerrero;
 
@@ -240,10 +314,20 @@ function startGame() {
   ui.log.innerHTML = '';
 
   addLog(`🎮 Comienza la aventura de ${hero.name} (${bonus.label}).`);
+  updateSecretShopOptions();
   updateUI();
+
+  if (normalizeName(hero.name) === secretNames.instantDeath) {
+    forceDefeatBySecret();
+  }
 }
 
 function restartGame() {
+  if (isBanned) {
+    location.reload();
+    return;
+  }
+
   gameStarted = false;
   hero = { ...baseHero };
   enemyIndex = 0;
@@ -255,6 +339,7 @@ function restartGame() {
   ui.setupCard.classList.remove('hidden');
   ui.shopPanel.classList.add('hidden');
   ui.log.innerHTML = '';
+  updateSecretShopOptions();
 
   addLog('🔁 Partida reiniciada. Elige nombre y rol para comenzar de nuevo.');
   updateUI();
@@ -267,9 +352,17 @@ ui.shopBtn.addEventListener('click', toggleShop);
 ui.closeShopBtn.addEventListener('click', toggleShop);
 ui.buyPotionBtn.addEventListener('click', buyPotion);
 ui.buyAttackBtn.addEventListener('click', buyAttack);
+ui.buyAestheticArmorBtn.addEventListener('click', buyAestheticArmor);
 ui.nextEnemyBtn.addEventListener('click', nextEnemy);
 ui.startBtn.addEventListener('click', startGame);
 ui.restartBtn.addEventListener('click', restartGame);
+ui.colorblindToggle.addEventListener('change', (event) => {
+  applyColorblindMode(event.target.checked);
+});
+
+const savedColorblindMode = localStorage.getItem('miniwrpgColorblindMode') === '1';
+ui.colorblindToggle.checked = savedColorblindMode;
+applyColorblindMode(savedColorblindMode);
 
 addLog('🎮 Elige un nombre y un rol para iniciar la aventura.');
 updateUI();
