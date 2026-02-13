@@ -13,6 +13,22 @@
         <p class="subtitle">RPG visual estilo texto con combate por turnos y suerte.</p>
       </header>
 
+      <section class="setup-card" id="setupCard">
+        <h2>🎭 Crea tu héroe</h2>
+        <div class="setup-grid">
+          <label for="heroNameInput">Nombre</label>
+          <input id="heroNameInput" type="text" maxlength="20" placeholder="Ej: Aria" />
+
+          <label for="heroRoleSelect">Rol</label>
+          <select id="heroRoleSelect">
+            <option value="guerrero">Guerrero (+vida)</option>
+            <option value="mago">Mago (+ataque)</option>
+            <option value="picaro">Pícaro (+oro y poción)</option>
+          </select>
+        </div>
+        <button id="startBtn" class="btn orange">Comenzar partida</button>
+      </section>
+
       <section class="status-card">
         <h2 id="heroName">Héroe</h2>
         <div class="bars">
@@ -23,6 +39,7 @@
           <span>🪙 Oro: <strong id="gold">30</strong></span>
           <span>🧪 Pociones: <strong id="potions">1</strong></span>
           <span>🗡️ Ataque base: <strong id="baseAttack">12</strong></span>
+          <span>⭐ Puntaje: <strong id="score">0</strong></span>
         </div>
       </section>
 
@@ -35,11 +52,12 @@
       </section>
 
       <section class="actions">
-        <button id="attackBtn" class="btn red">Atacar</button>
-        <button id="defendBtn" class="btn blue">Defender</button>
-        <button id="healBtn" class="btn green">Usar poción</button>
+        <button id="attackBtn" class="btn red" disabled>Atacar</button>
+        <button id="defendBtn" class="btn blue" disabled>Defender</button>
+        <button id="healBtn" class="btn green" disabled>Usar poción</button>
         <button id="shopBtn" class="btn purple">Tienda</button>
         <button id="nextEnemyBtn" class="btn orange" disabled>Siguiente enemigo</button>
+        <button id="restartBtn" class="btn gray">Reiniciar</button>
       </section>
 
       <section class="shop hidden" id="shopPanel">
