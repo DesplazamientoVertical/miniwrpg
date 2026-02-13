@@ -101,10 +101,22 @@ function updateUI() {
   ui.score.textContent = hero.score;
 }
 
+function canPlay() {
+  return gameStarted && !isBanned && hero.hp > 0;
+}
+
 function setBattleButtons(enabled) {
   ui.attackBtn.disabled = !enabled;
   ui.defendBtn.disabled = !enabled;
   ui.healBtn.disabled = !enabled;
+}
+
+function setShopEnabled(enabled) {
+  ui.shopBtn.disabled = !enabled;
+  ui.buyPotionBtn.disabled = !enabled;
+  ui.buyAttackBtn.disabled = !enabled;
+  ui.buyAestheticArmorBtn.disabled = !enabled;
+  ui.closeShopBtn.disabled = !enabled;
 }
 
 function loseGame() {
@@ -114,7 +126,7 @@ function loseGame() {
 }
 
 function enemyTurn() {
-  if (enemy.hp <= 0 || hero.hp <= 0 || !gameStarted || isBanned) return;
+  if (enemy.hp <= 0 || !canPlay()) return;
   let damage = rng(enemy.minAtk, enemy.maxAtk);
   if (hero.defending) {
     damage = Math.max(1, Math.floor(damage / 2));
@@ -132,7 +144,7 @@ function enemyTurn() {
 }
 
 function attack() {
-  if (hero.hp <= 0 || enemy.hp <= 0 || !gameStarted || isBanned) return;
+  if (!canPlay() || enemy.hp <= 0) return;
   const luckBonus = rng(0, 8);
   const crit = Math.random() < 0.2;
   let damage = hero.baseAttack + luckBonus;
@@ -155,7 +167,7 @@ function attack() {
 }
 
 function defend() {
-  if (!gameStarted || isBanned) return;
+  if (!canPlay()) return;
   hero.defending = true;
   addLog('🛡️ Te preparas para defender el próximo golpe.');
   enemyTurn();
@@ -163,7 +175,7 @@ function defend() {
 }
 
 function heal() {
-  if (!gameStarted || isBanned) return;
+  if (!canPlay()) return;
   if (hero.potions <= 0) {
     addLog('❌ No tienes pociones.');
     return;
@@ -182,7 +194,7 @@ function heal() {
 }
 
 function nextEnemy() {
-  if (!gameStarted || isBanned) return;
+  if (!canPlay()) return;
   if (enemyIndex >= enemies.length - 1) {
     addLog('🏆 ¡Ya derrotaste a todos los enemigos de Miniw RPG!');
     ui.nextEnemyBtn.disabled = true;
@@ -198,12 +210,12 @@ function nextEnemy() {
 }
 
 function toggleShop() {
-  if (isBanned) return;
+  if (isBanned || !gameStarted) return;
   ui.shopPanel.classList.toggle('hidden');
 }
 
 function buyPotion() {
-  if (!gameStarted || isBanned) return;
+  if (!canPlay()) return;
   if (hero.gold < 15) {
     addLog('❌ No tienes oro suficiente para poción.');
     return;
@@ -215,7 +227,7 @@ function buyPotion() {
 }
 
 function buyAttack() {
-  if (!gameStarted || isBanned) return;
+  if (!canPlay()) return;
   if (hero.gold < 25) {
     addLog('❌ No tienes oro suficiente para mejorar ataque.');
     return;
@@ -227,7 +239,7 @@ function buyAttack() {
 }
 
 function buyAestheticArmor() {
-  if (!gameStarted || isBanned) return;
+  if (!canPlay()) return;
   if (hero.name.trim().toLowerCase() !== '21n') {
     addLog('❌ Esa armadura solo la entiende alguien especial.');
     return;
@@ -245,14 +257,10 @@ function setBannedMode() {
   isBanned = true;
   gameStarted = false;
   setBattleButtons(false);
+  setShopEnabled(false);
   ui.startBtn.disabled = true;
   ui.restartBtn.disabled = true;
-  ui.shopBtn.disabled = true;
   ui.nextEnemyBtn.disabled = true;
-  ui.buyPotionBtn.disabled = true;
-  ui.buyAttackBtn.disabled = true;
-  ui.buyAestheticArmorBtn.disabled = true;
-  ui.closeShopBtn.disabled = true;
   ui.heroNameInput.disabled = true;
   ui.heroRoleSelect.disabled = true;
   ui.shopPanel.classList.add('hidden');
@@ -262,10 +270,7 @@ function setBannedMode() {
 function triggerFJNavarroSecret() {
   enemy = { ...secretEnemy };
   addLog('☠️ Se activa un secreto: aparece El barbudo hijo de ####.');
-  addLog('💥 Te fulmina de un solo golpe.');
-  hero.hp = 0;
-  updateUI();
-  loseGame();
+  enemyTurn();
 }
 
 function applyNameSecrets() {
@@ -313,9 +318,9 @@ function startGame() {
   ui.setupCard.classList.add('hidden');
   ui.shopPanel.classList.add('hidden');
   setBattleButtons(true);
+  setShopEnabled(true);
   ui.nextEnemyBtn.disabled = true;
   ui.log.innerHTML = '';
-  ui.buyAestheticArmorBtn.disabled = false;
 
   addLog(`🎮 Comienza la aventura de ${hero.name} (${bonus.label}).`);
   applyNameSecrets();
@@ -332,6 +337,7 @@ function restartGame() {
   defeatedEnemies = 0;
 
   setBattleButtons(false);
+  setShopEnabled(false);
   ui.nextEnemyBtn.disabled = true;
   ui.setupCard.classList.remove('hidden');
   ui.shopPanel.classList.add('hidden');
@@ -361,5 +367,6 @@ ui.startBtn.addEventListener('click', startGame);
 ui.restartBtn.addEventListener('click', restartGame);
 ui.colorblindToggle.addEventListener('click', toggleColorblindMode);
 
+setShopEnabled(false);
 addLog('🎮 Elige un nombre y un rol para iniciar la aventura.');
 updateUI();
