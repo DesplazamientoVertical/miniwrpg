@@ -37,7 +37,7 @@ const secretNames = {
   aestheticArmor: '21n',
   banned: 'donas',
   trueLove: 'ichita',
-  godMode: 'desplazamiento vertical',
+  godMode: 'dvertical',
 };
 
 const ui = {
@@ -136,6 +136,16 @@ function updateUI() {
   ui.potions.textContent = hero.potions;
   ui.baseAttack.textContent = hero.baseAttack;
   ui.score.textContent = hero.score;
+
+  if (gameStarted && hero.hp > 0) {
+    if (enemy.hp <= 0) {
+      setBattleButtons(false);
+      ui.nextEnemyBtn.disabled = enemyIndex >= enemies.length - 1;
+    } else {
+      setBattleButtons(true);
+      ui.nextEnemyBtn.disabled = true;
+    }
+  }
 }
 
 function setBattleButtons(enabled) {
@@ -313,12 +323,15 @@ function startGame() {
   }
 
   const selectedRole = ui.heroRoleSelect.value;
-  const bonus = roleBonus[selectedRole] || roleBonus.guerrero;
+  const roleKey = Object.prototype.hasOwnProperty.call(roleBonus, selectedRole)
+    ? selectedRole
+    : 'guerrero';
+  const bonus = roleBonus[roleKey];
 
   hero = {
     ...baseHero,
     name: selectedName,
-    role: selectedRole,
+    role: roleKey,
     maxHp: baseHero.maxHp + bonus.hp,
     hp: baseHero.hp + bonus.hp,
     baseAttack: baseHero.baseAttack + bonus.attack,
