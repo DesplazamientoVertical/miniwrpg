@@ -32,6 +32,11 @@ let defeatedEnemies = 0;
 let gameStarted = false;
 let isBanned = false;
 let godMode = false;
+let musicEnabled = true;
+
+const backgroundMusic = new Audio('https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8b3798d8f.mp3?filename=adventure-theme-119304.mp3');
+backgroundMusic.loop = true;
+backgroundMusic.volume = 0.3;
 const secretNames = {
   instantDeath: 'fjnavarro',
   aestheticArmor: '21n',
@@ -60,6 +65,7 @@ const ui = {
   defendBtn: document.getElementById('defendBtn'),
   healBtn: document.getElementById('healBtn'),
   shopBtn: document.getElementById('shopBtn'),
+  musicToggleBtn: document.getElementById('musicToggleBtn'),
   nextEnemyBtn: document.getElementById('nextEnemyBtn'),
   shopPanel: document.getElementById('shopPanel'),
   buyPotionBtn: document.getElementById('buyPotionBtn'),
@@ -116,6 +122,36 @@ function calculateScore() {
 
 function applyGodModeVisual(enabled) {
   document.body.classList.toggle('god-mode', enabled);
+}
+
+
+function updateMusicButtonLabel() {
+  ui.musicToggleBtn.textContent = musicEnabled ? 'Desactivar música' : 'Activar música';
+}
+
+function playBackgroundMusic() {
+  if (!musicEnabled) return;
+  backgroundMusic.currentTime = 0;
+  backgroundMusic.play().catch(() => {
+    addLog('⚠️ No se pudo reproducir la música automáticamente.');
+  });
+}
+
+function stopBackgroundMusic() {
+  backgroundMusic.pause();
+  backgroundMusic.currentTime = 0;
+}
+
+function toggleMusic() {
+  musicEnabled = !musicEnabled;
+  if (musicEnabled && gameStarted) {
+    playBackgroundMusic();
+    addLog('🎵 Música activada.');
+  } else {
+    stopBackgroundMusic();
+    addLog('🔇 Música desactivada.');
+  }
+  updateMusicButtonLabel();
 }
 
 function updateUI() {
@@ -312,11 +348,13 @@ function startGame() {
   if (normalizedName === secretNames.banned) {
     isBanned = true;
     gameStarted = false;
+    stopBackgroundMusic();
     setBattleButtons(false);
     ui.nextEnemyBtn.disabled = true;
     ui.setupCard.classList.remove('hidden');
     ui.shopPanel.classList.add('hidden');
     ui.log.innerHTML = '';
+    ui.musicToggleBtn.disabled = true;
     addLog('⛔ BANEADO. Tenés que reiniciar la página sí o sí.');
     updateUI();
     return;
@@ -349,8 +387,10 @@ function startGame() {
   setBattleButtons(true);
   ui.nextEnemyBtn.disabled = true;
   ui.log.innerHTML = '';
+  ui.musicToggleBtn.disabled = false;
 
   addLog(`🎮 Comienza la aventura de ${hero.name} (${bonus.label}).`);
+  playBackgroundMusic();
 
   godMode = normalizedName === secretNames.godMode;
   applyGodModeVisual(godMode);
@@ -360,7 +400,7 @@ function startGame() {
   }
 
   if (godMode) {
-    addLog('👑 Modo Dios activado');
+    addLog('👑 Modo Dios activado con DVertical.');
     hero.baseAttack += 999;
   }
 
@@ -379,6 +419,7 @@ function restartGame() {
   }
 
   gameStarted = false;
+  stopBackgroundMusic();
   godMode = false;
   applyGodModeVisual(false);
   hero = { ...baseHero };
@@ -391,6 +432,7 @@ function restartGame() {
   ui.setupCard.classList.remove('hidden');
   ui.shopPanel.classList.add('hidden');
   ui.log.innerHTML = '';
+  ui.musicToggleBtn.disabled = true;
   updateSecretShopOptions();
 
   addLog('🔁 Partida reiniciada. Elige nombre y rol para comenzar de nuevo.');
@@ -401,6 +443,7 @@ ui.attackBtn.addEventListener('click', attack);
 ui.defendBtn.addEventListener('click', defend);
 ui.healBtn.addEventListener('click', heal);
 ui.shopBtn.addEventListener('click', toggleShop);
+ui.musicToggleBtn.addEventListener('click', toggleMusic);
 ui.closeShopBtn.addEventListener('click', toggleShop);
 ui.buyPotionBtn.addEventListener('click', buyPotion);
 ui.buyAttackBtn.addEventListener('click', buyAttack);
@@ -416,5 +459,8 @@ const savedColorblindMode = localStorage.getItem('miniwrpgColorblindMode') === '
 ui.colorblindToggle.checked = savedColorblindMode;
 applyColorblindMode(savedColorblindMode);
 
-addLog('🎮 Elige un nombre y un rol para iniciar la aventura.');
+ui.musicToggleBtn.disabled = true;
+updateMusicButtonLabel();
+
+addLog('🎮 Elige un nombre y un rol para iniciar la aventura. Usa DVertical para activar el modo dios.');
 updateUI();
