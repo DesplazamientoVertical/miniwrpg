@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Miniw RPG</title>
+    <title>Minym RPG</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -13,7 +13,7 @@
           <label for="colorblindToggle">Modo daltónico</label>
           <input id="colorblindToggle" type="checkbox" />
         </div>
-        <h1>⚔️ Miniw RPG</h1>
+        <h1>⚔️ Minym RPG</h1>
         <p class="subtitle">RPG visual estilo texto con combate por turnos y suerte.</p>
       </header>
 
@@ -76,6 +76,15 @@
           <button id="buyAttackBtn" class="btn red">Mejorar ataque +3 (25 oro)</button>
           <button id="buyAestheticArmorBtn" class="btn blue hidden">Armadura estética (60 oro)</button>
           <button id="closeShopBtn" class="btn gray">Cerrar tienda</button>
+        </div>
+      </section>
+
+      <section class="story-card hidden" id="storyPanel">
+        <h3>🧭 Decisión clave</h3>
+        <p id="storyText"></p>
+        <div class="story-actions">
+          <button id="storyChoiceABtn" class="btn orange"></button>
+          <button id="storyChoiceBBtn" class="btn blue"></button>
         </div>
       </section>
 

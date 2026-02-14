@@ -52,12 +52,17 @@ let defeatedEnemies = 0;
 let gameStarted = false;
 let isBanned = false;
 let godMode = false;
+let gameOver = false;
+let finalShown = false;
+let availableChoices = [];
+const finalRound = 6;
 const secretNames = {
   instantDeath: 'fjnavarro',
   aestheticArmor: '21n',
   banned: 'donas',
   trueLove: 'ichita',
   godMode: 'dvertical',
+  oneHitJoke: 'miguela',
 };
 
 const ui = {
@@ -89,6 +94,10 @@ const ui = {
   colorblindToggle: document.getElementById('colorblindToggle'),
   locationName: document.getElementById('locationName'),
   log: document.getElementById('log'),
+  storyPanel: document.getElementById('storyPanel'),
+  storyText: document.getElementById('storyText'),
+  storyChoiceABtn: document.getElementById('storyChoiceABtn'),
+  storyChoiceBBtn: document.getElementById('storyChoiceBBtn'),
 };
 
 
@@ -140,6 +149,139 @@ function applyGodModeVisual(enabled) {
 
 
 
+
+
+const storyEvents = [
+  {
+    text: 'Encuentras un cofre viejo entre raíces retorcidas.',
+    choices: [
+      {
+        label: 'Abrir el cofre',
+        effect: () => {
+          const roll = rng(1, 100);
+          if (roll <= 40) {
+            hero.maxHp += 20;
+            hero.hp = Math.min(hero.maxHp, hero.hp + 20);
+            addLog('🧰 Cofre bendito: +20 vida máxima y te curas 20.');
+          } else if (roll <= 70) {
+            hero.potions += 2;
+            addLog('🧪 Cofre alquímico: recibes 2 pociones.');
+          } else {
+            hero.baseAttack += 4;
+            addLog('🗡️ Cofre de guerra: +4 ataque base.');
+          }
+        },
+      },
+      {
+        label: 'Ignorarlo',
+        effect: () => {
+          hero.gold += 12;
+          addLog('🪙 Pasas de largo y encuentras 12 de oro en el camino.');
+        },
+      },
+    ],
+  },
+  {
+    text: 'Un mercader te ofrece una runa por un precio justo.',
+    choices: [
+      {
+        label: 'Comprar runa (-20 oro)',
+        effect: () => {
+          if (hero.gold < 20) {
+            addLog('❌ No alcanzó el oro para la runa.');
+            return;
+          }
+          hero.gold -= 20;
+          hero.damageReduction = (hero.damageReduction || 0) + 2;
+          addLog('🔰 Runa adquirida: +2 defensa permanente.');
+        },
+      },
+      {
+        label: 'Ahorrar el oro',
+        effect: () => {
+          hero.baseAttack += 2;
+          addLog('⚡ Te guardas el oro y entrenas: +2 ataque base.');
+        },
+      },
+    ],
+  },
+  {
+    text: 'Hay una bifurcación: santuario o campo de batalla.',
+    choices: [
+      {
+        label: 'Ir al santuario',
+        effect: () => {
+          const healAmount = 28;
+          hero.hp = Math.min(hero.maxHp, hero.hp + healAmount);
+          addLog('⛩️ El santuario te restaura 28 de vida.');
+        },
+      },
+      {
+        label: 'Ir al campo de batalla',
+        effect: () => {
+          hero.baseAttack += 5;
+          hero.hp = Math.max(1, hero.hp - 10);
+          addLog('🔥 Batalla brutal: +5 ataque, pero pierdes 10 de vida.');
+        },
+      },
+    ],
+  },
+];
+
+function getEnding() {
+  if (hero.hp <= 0) return null;
+  if (hero.baseAttack >= 30 && hero.damageReduction >= 3) {
+    return '👑 Final del Guardián: equilibraste fuerza y defensa, salvaste el reino.';
+  }
+  if (hero.potions >= 4 || hero.maxHp >= 130) {
+    return '💚 Final del Alquimista: sobreviviste a todo y curaste a tu aldea.';
+  }
+  return '🌒 Final del Errante: venciste, pero eliges seguir explorando en solitario.';
+}
+
+function showFinal() {
+  if (finalShown || gameOver) return;
+  finalShown = true;
+  gameOver = true;
+  setBattleButtons(false);
+  ui.nextEnemyBtn.disabled = true;
+  const ending = getEnding();
+  if (ending) {
+    addLog('🏁 Has llegado al final de Minym RPG.');
+    addLog(ending);
+    addLog(`⭐ Puntaje final: ${hero.score}.`);
+  }
+}
+
+function maybeTriggerStoryEvent() {
+  if (!gameStarted || gameOver || enemy.hp > 0) return;
+  if (enemyIndex === 1 || enemyIndex === 3 || enemyIndex === 5) {
+    const event = storyEvents[(enemyIndex - 1) / 2];
+    if (!event) return;
+    availableChoices = event.choices;
+    ui.storyText.textContent = event.text;
+    ui.storyChoiceABtn.textContent = event.choices[0].label;
+    ui.storyChoiceBBtn.textContent = event.choices[1].label;
+    ui.storyPanel.classList.remove('hidden');
+    ui.nextEnemyBtn.disabled = true;
+  }
+}
+
+function chooseStoryOption(index) {
+  if (!gameStarted || gameOver || ui.storyPanel.classList.contains('hidden')) return;
+  const choice = availableChoices[index];
+  if (!choice) return;
+  choice.effect();
+  ui.storyPanel.classList.add('hidden');
+  availableChoices = [];
+  updateUI();
+  if (enemyIndex + 1 >= finalRound) {
+    showFinal();
+    return;
+  }
+  ui.nextEnemyBtn.disabled = false;
+}
+
 function updateUI() {
   hero.score = calculateScore();
 
@@ -177,8 +319,11 @@ function setBattleButtons(enabled) {
 }
 
 function loseGame() {
+  if (gameOver) return;
+  gameOver = true;
   setBattleButtons(false);
   ui.nextEnemyBtn.disabled = true;
+  ui.storyPanel.classList.add('hidden');
   addLog(`💀 Has sido derrotado. Tu puntaje final fue ${hero.score}.`);
 }
 
@@ -212,10 +357,14 @@ function enemyTurn() {
 }
 
 function attack() {
-  if (hero.hp <= 0 || enemy.hp <= 0 || !gameStarted) return;
+  if (hero.hp <= 0 || enemy.hp <= 0 || !gameStarted || gameOver) return;
   const luckBonus = rng(0, 8);
   const crit = Math.random() < 0.2;
   let damage = hero.baseAttack + luckBonus;
+  if (normalizeName(hero.name) === secretNames.oneHitJoke) {
+    damage = enemy.hp;
+    addLog('🥚 Easter egg: Miguela usa el PETE SUPREMO y derrota de un golpe.');
+  }
   if (crit) damage += 10;
 
   enemy.hp = Math.max(0, enemy.hp - damage);
@@ -227,6 +376,11 @@ function attack() {
     addLog(`✅ Venciste a ${enemy.name} y ganaste ${enemy.reward} de oro.`);
     setBattleButtons(false);
     ui.nextEnemyBtn.disabled = false;
+    if (enemyIndex + 1 >= finalRound) {
+      showFinal();
+    } else {
+      maybeTriggerStoryEvent();
+    }
   } else {
     enemyTurn();
   }
@@ -235,7 +389,7 @@ function attack() {
 }
 
 function defend() {
-  if (!gameStarted) return;
+  if (!gameStarted || gameOver) return;
   hero.defending = true;
   addLog('🛡️ Te preparas para defender el próximo golpe.');
   enemyTurn();
@@ -243,7 +397,7 @@ function defend() {
 }
 
 function heal() {
-  if (!gameStarted) return;
+  if (!gameStarted || gameOver) return;
   if (hero.potions <= 0) {
     addLog('❌ No tienes pociones.');
     return;
@@ -262,7 +416,7 @@ function heal() {
 }
 
 function nextEnemy() {
-  if (!gameStarted) return;
+  if (!gameStarted || gameOver) return;
   enemyIndex += 1;
   enemy = createEnemyForRound(enemyIndex);
   setBattleButtons(true);
@@ -272,12 +426,12 @@ function nextEnemy() {
 }
 
 function toggleShop() {
-  if (!gameStarted || isBanned) return;
+  if (!gameStarted || isBanned || gameOver) return;
   ui.shopPanel.classList.toggle('hidden');
 }
 
 function buyPotion() {
-  if (!gameStarted) return;
+  if (!gameStarted || gameOver) return;
   if (hero.gold < 15) {
     addLog('❌ No tienes oro suficiente para poción.');
     return;
@@ -289,7 +443,7 @@ function buyPotion() {
 }
 
 function buyAttack() {
-  if (!gameStarted) return;
+  if (!gameStarted || gameOver) return;
   if (hero.gold < 25) {
     addLog('❌ No tienes oro suficiente para mejorar ataque.');
     return;
@@ -302,7 +456,7 @@ function buyAttack() {
 
 
 function buyAestheticArmor() {
-  if (!gameStarted) return;
+  if (!gameStarted || gameOver) return;
   if (normalizeName(hero.name) !== secretNames.aestheticArmor) {
     addLog('❌ Ese objeto no está disponible para tu héroe.');
     return;
@@ -333,6 +487,7 @@ function startGame() {
     ui.setupCard.classList.remove('hidden');
     ui.shopPanel.classList.add('hidden');
     ui.log.innerHTML = '';
+  ui.storyPanel.classList.add('hidden');
     addLog('⛔ BANEADO. Tenés que reiniciar la página sí o sí.');
     updateUI();
     return;
@@ -360,11 +515,14 @@ function startGame() {
   enemy = createEnemyForRound(enemyIndex);
   defeatedEnemies = 0;
   gameStarted = true;
+  gameOver = false;
+  finalShown = false;
   ui.setupCard.classList.add('hidden');
   ui.shopPanel.classList.add('hidden');
   setBattleButtons(true);
   ui.nextEnemyBtn.disabled = true;
   ui.log.innerHTML = '';
+  ui.storyPanel.classList.add('hidden');
 
   addLog(`🎮 Comienza la aventura de ${hero.name} (${bonus.label}).`);
 
@@ -395,6 +553,8 @@ function restartGame() {
   }
 
   gameStarted = false;
+  gameOver = false;
+  finalShown = false;
   godMode = false;
   applyGodModeVisual(false);
   hero = { ...baseHero };
@@ -407,6 +567,7 @@ function restartGame() {
   ui.setupCard.classList.remove('hidden');
   ui.shopPanel.classList.add('hidden');
   ui.log.innerHTML = '';
+  ui.storyPanel.classList.add('hidden');
   updateSecretShopOptions();
 
   addLog('🔁 Partida reiniciada. Elige nombre y rol para comenzar de nuevo.');
@@ -424,6 +585,8 @@ ui.buyAestheticArmorBtn.addEventListener('click', buyAestheticArmor);
 ui.nextEnemyBtn.addEventListener('click', nextEnemy);
 ui.startBtn.addEventListener('click', startGame);
 ui.restartBtn.addEventListener('click', restartGame);
+ui.storyChoiceABtn.addEventListener('click', () => chooseStoryOption(0));
+ui.storyChoiceBBtn.addEventListener('click', () => chooseStoryOption(1));
 ui.colorblindToggle.addEventListener('change', (event) => {
   applyColorblindMode(event.target.checked);
 });
@@ -432,5 +595,5 @@ const savedColorblindMode = localStorage.getItem('miniwrpgColorblindMode') === '
 ui.colorblindToggle.checked = savedColorblindMode;
 applyColorblindMode(savedColorblindMode);
 
-addLog('🎮 Elige un nombre y un rol para iniciar la aventura. Usa DVertical para activar el modo dios.');
+addLog('🎮 Elige un nombre y un rol para iniciar la aventura. Ahora Minym RPG incluye decisiones, cofres y final.');
 updateUI();
