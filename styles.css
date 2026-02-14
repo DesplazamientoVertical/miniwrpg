@@ -232,3 +232,18 @@ body.god-mode .log-card li {
 .hidden {
   display: none;
 }
+
+.story-card {
+  background: var(--card);
+  border: 2px solid var(--border);
+  border-radius: 4px;
+  padding: 14px;
+  box-shadow: 0 0 0 2px #000 inset;
+}
+
+.story-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
